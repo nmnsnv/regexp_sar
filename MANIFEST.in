@@ -1,0 +1,5 @@
+
+recursive-include tests *
+recursive-include examples *
+
+include LICENSE.txt
