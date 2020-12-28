@@ -1,6 +1,8 @@
 #ifndef REGEXP_SAR_H
 #define REGEXP_SAR_H
 
+#define Py_LIMITED_API
+
 typedef void (*sar_matchCallback)(int from, int to, void *args);
 
 typedef enum sar_nodeType_e
