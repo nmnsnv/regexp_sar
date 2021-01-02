@@ -5,7 +5,7 @@ def main():
     with open("README.md", "r", encoding="utf-8") as fh:
         long_description = fh.read()
     setup(name="regexp-sar",
-          version="0.1.0b3",
+          version="0.1.0b4",
 
           description="SAR Regexp Engine for Python",
           long_description=long_description,
