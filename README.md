@@ -10,8 +10,15 @@ When adding a regexp, there is also a related callback that will be called upon 
 
 ## Install
 
+Before installation, make sure you have latest version of pip:
 ```bash
-pip install regexp_sar
+pip install --upgrade pip
+```
+
+Install regexp-sar:
+
+```bash
+pip install regexp-sar
 ```
 
 ## Import
