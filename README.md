@@ -10,7 +10,7 @@ When adding a regexp, there is also a related callback that will be called upon 
 
 ## Install
 
-Before installation, make sure you have latest version of pip:
+Before installation, make sure you have the latest version of pip:
 ```bash
 pip install --upgrade pip
 ```
@@ -30,25 +30,32 @@ from regexp_sar import RegexpSar
 ## Example
 
 ```python
+'''
+This example will find and print second match of each regexp,
+while also showing what regexp was caught
+'''
+
 from regexp_sar import RegexpSar
 
 sar = RegexpSar()
 
-match_word_count = 0
-match_word = None
-match_num_count = 0
-match_num = None
+# string to be matched against
 match_str = "hello world 123 abc 456 789"
 
+# list of regexps, first item in pair is the regexp,
+# second item in the pair is a unique word for that regexp
 regexps = [
     ['\w+', 'word'],
     ['\d+', 'number'],
 ]
 
+# add all regexps in a loop
 for cur_regexp in regexps:
     def find_second_match(description):
         match_count = 0
         match_val = None
+
+        # define inner method, to use with closure
         def callback(from_pos, to_pos):
             nonlocal match_count, match_val
             match_count += 1
@@ -56,14 +63,17 @@ for cur_regexp in regexps:
                 print("Match: " + str(description) + ": " + match_str[from_pos:to_pos])
             sar.continue_from(to_pos)
         return callback
+
+    # add regexp with a callback
     sar.add_regexp(cur_regexp[0], find_second_match(cur_regexp[1]))
 
+# run match
+sar.match(match_str)
 '''
 Output:
     Match: word: world
     Match: number: 456
 '''
-sar.match(match_str)
 ```
 
 # Methods
@@ -148,6 +158,10 @@ sar.match('a\\b') # Match: 1->2
 # examples
 
 Examples may be found in the ```test_oousage.py``` file, and in the examples directory
+
+# More information
+
+For more information, visit [My Post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md).
 
 # Unicode support
 

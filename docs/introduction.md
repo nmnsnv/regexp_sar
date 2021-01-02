@@ -193,7 +193,7 @@ OUTPUT:
 '''
 ```
 
-As we can see in the results, SAR proved to be much faster then even python built in regexp alternation, by more than x160 times on my PC.
+As we can see in the results, SAR proved to be much faster then even python built in regexp alternation, by <b>more than x150 times</b> on my PC.
 
 NOTE: The strings used in this benchmark are randomly generated thus results may vary, although after running the benchmark multiple times, the results were rather consistent.
 
