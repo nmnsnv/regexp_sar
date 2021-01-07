@@ -1,5 +1,5 @@
 
-As I've said in the previous post, SAR is very powerful when it comes into appending context for our regexps.
+As I've said in the [previous post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md), SAR is very powerful when it comes into appending context for our regexps.
 In this post I will try to demonstrate this statement.
 
 Now consider the following task: You need to find in a C code all the functions that call another certain function inside of them, for example, we want to find all functions in our code that call the function "malloc".
