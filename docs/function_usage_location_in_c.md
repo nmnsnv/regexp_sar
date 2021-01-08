@@ -1,6 +1,8 @@
 
-As I've said in the [previous post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md), SAR is very powerful when it comes into appending context for our regexps.
+As I've said in the [previous post (introduction to SAR)](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md), SAR is very powerful when it comes into appending context for our regexps.
 In this post I will try to demonstrate this statement.
+
+A reminder of what SAR is - SAR is a new regex engine written for Python. It is designed to take a different approach from current regex engines for using many regexps at once while also keeping track of exactly which regex was caught (which differs from alternations in current regex engines). For more information please visit my [github page](https://github.com/nmnsnv/regexp_sar), or view the last post I've written which is linked at the start of the post.
 
 Now consider the following task: You need to find in a C code all the functions that call another certain function inside of them, for example, we want to find all functions in our code that call the function "malloc".
 
