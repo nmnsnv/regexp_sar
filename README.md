@@ -161,7 +161,7 @@ Examples may be found in the ```test_oousage.py``` file, and in the examples dir
 
 # More information
 
-For more information, visit [My Post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md).
+For more information, visit [my introduction post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md), or [my practical example where SAR comes to play](https://github.com/nmnsnv/regexp_sar/blob/master/docs/function_usage_location_in_c.md).
 
 # Unicode support
 
