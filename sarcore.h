@@ -2,6 +2,7 @@
 #define REGEXP_SAR_H
 
 typedef void (*sar_matchCallback)(int from, int to, void *args);
+typedef void (*sar_freeCallbackArgs)(void *args);
 
 typedef enum sar_nodeType_e
 {
@@ -87,7 +88,12 @@ typedef struct sarObject_t
 void sar_freeObject(sarObject_t *sarObject);
 void sar_initObject(sarObject_t *obj);
 
-void sar_buildPath(sarObject_t *sarObject, char *regexpStr, int len, sar_matchCallback callback, void *callbackArgs);
+void sar_buildPath(sarObject_t *sarObject,
+                   char *regexpStr,
+                   int len,
+                   sar_matchCallback callback,
+                   sar_freeCallbackArgs freeCallback,
+                   void *callbackArgs);
 
 void sar_matchAt(sarObject_t *sarObject, char *matchStr, int at, int len);
 void sar_matchFrom(sarObject_t *sarObject, char *matchStr, int from, int len);

@@ -11,6 +11,7 @@ typedef struct
 {
     void *args;
     sar_matchCallback callback;
+    sar_freeCallbackArgs freeCallback;
 
     // used to count how many times this struct is pointed at
     int pointedCount;
@@ -38,7 +39,9 @@ static void sar_initNodeComplexInstruction(sar_nodeComplexInstruction_t *nodeIns
 static void sar_freeNodeComplexInstruction(sar_nodeComplexInstruction_t *complexNodeInstruction);
 
 static void sar_initMatchCallbackStruct(sar_matchCallbackStruct_t *callbackStruct,
-                                        sar_matchCallback func, void *args);
+                                        sar_matchCallback func,
+                                        sar_freeCallbackArgs freeFunc,
+                                        void *args);
 static void sar_freeMatchCallbackStruct(sar_matchCallbackStruct_t *callbacStruct);
 
 static sar_linkedListNode_t *sar_buildComplexNodeInstructions(char *regexpStr, int len);
@@ -196,10 +199,14 @@ void sar_initObject(sarObject_t *obj)
 // general methods:
 
 void sar_buildPath(sarObject_t *sarObject,
-                   char *regexpStr, int len, sar_matchCallback callback, void *callbackArgs)
+                   char *regexpStr,
+                   int len,
+                   sar_matchCallback callback,
+                   sar_freeCallbackArgs freeCallback,
+                   void *callbackArgs)
 {
     sar_matchCallbackStruct_t *callbackStruct = malloc(sizeof(sar_matchCallbackStruct_t));
-    sar_initMatchCallbackStruct(callbackStruct, callback, callbackArgs);
+    sar_initMatchCallbackStruct(callbackStruct, callback, freeCallback, callbackArgs);
     sar_linkedListNode_t *complexInstructions = sar_buildComplexNodeInstructions(regexpStr, len);
     sar_linkedListNode_t *allInstructions = sar_convertConvertComplexInstructions(complexInstructions);
 
@@ -516,10 +523,14 @@ static void sar_freeNodeComplexInstruction(sar_nodeComplexInstruction_t *complex
     // Nothing to free
 }
 
-static void sar_initMatchCallbackStruct(sar_matchCallbackStruct_t *callbackStruct, sar_matchCallback func, void *args)
+static void sar_initMatchCallbackStruct(sar_matchCallbackStruct_t *callbackStruct,
+                                        sar_matchCallback func,
+                                        sar_freeCallbackArgs freeFunc,
+                                        void *args)
 {
     callbackStruct->args = args;
     callbackStruct->callback = func;
+    callbackStruct->freeCallback = freeFunc;
     callbackStruct->pointedCount = 0;
     callbackStruct->lastTo = -1;
     callbackStruct->lastFrom = -1;
@@ -528,12 +539,11 @@ static void sar_initMatchCallbackStruct(sar_matchCallbackStruct_t *callbackStruc
 
 static void sar_freeMatchCallbackStruct(sar_matchCallbackStruct_t *callbacStruct)
 {
-    // Nothing to free
+    callbacStruct->freeCallback(callbacStruct->args);
 }
 
 // general static methods:
 
-// TODO: free garbage
 static sar_linkedListNode_t *sar_convertConvertComplexInstructions(sar_linkedListNode_t *complexInstructions)
 {
     // allSimpleRegexps linked list of linked list of sar_nodeInstruction_t.
@@ -1003,7 +1013,6 @@ static void sar_insertNode(sarNode_t *intoNode, sarNode_t *node, int isNegNode, 
             negativeNodeInstruction->isNeg = 1;
             sar_initNode(intoNode->negativeNode, negativeNodeInstruction);
         }
-        // TODO: take note of negative characters!
         sar_insertNode(intoNode->negativeNode, node, 1, isPlusNode);
     }
     else if (!isPlusNode && insertInstruction->suffix == SAR_NODE_SUFFIX_PLUS)

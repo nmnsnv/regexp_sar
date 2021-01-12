@@ -5,6 +5,7 @@
 #include "sarcore.h"
 
 static void sarmod_callback(int from, int to, void *args);
+static void sarmod_freeCallback(void *args);
 
 static void sarmod_destroyObject(PyObject *sarObject);
 static PyObject *sarmod_createObject(PyObject *self, PyObject *args);
@@ -67,7 +68,7 @@ static PyObject *sarmod_addRegexp(PyObject *self, PyObject *args)
     sarObject_t *sarObject = PyCapsule_GetPointer(sarObjectCapsule, NULL);
     Py_XINCREF(regexpCallback);
 
-    sar_buildPath(sarObject, regexpStr, strLen, sarmod_callback, regexpCallback);
+    sar_buildPath(sarObject, regexpStr, strLen, sarmod_callback, sarmod_freeCallback, regexpCallback);
     Py_RETURN_NONE;
 }
 
@@ -143,4 +144,10 @@ static void sarmod_callback(int from, int to, void *args)
     result = PyObject_CallObject(py_lambdaObj, arglist);
     Py_XDECREF(arglist);
     Py_XDECREF(result);
+}
+
+static void sarmod_freeCallback(void *args)
+{
+    PyObject *py_lambdaObj = (PyObject *)args;
+    Py_XDECREF(py_lambdaObj);
 }
