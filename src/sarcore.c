@@ -9,6 +9,11 @@
 
 typedef struct
 {
+    sar_linkedListNode_t head;
+} sar_linkedListPool_t;
+
+typedef struct
+{
     void *args;
     sar_matchCallback callback;
     sar_freeCallbackArgs freeCallback;
@@ -52,7 +57,7 @@ static void sar_setBackslashChar(sar_nodeComplexInstruction_t *nodeInstruction, 
 static void sar_setCharSuffix(sar_nodeComplexInstruction_t *nodeInstruction, char charVal);
 static int sar_isCharSuffix(char charVal);
 
-static void sar_matchAtInternal(sarObject_t *sarObject, char *matchStr, int at, int len);
+static void sar_matchAtInternal(sar_linkedListPool_t *pool, sarObject_t *sarObject, char *matchStr, int at, int len);
 
 static void sar_appendCallback(sarNode_t *node, sar_matchCallbackStruct_t *callbackStruct);
 static void sar_insertNode(sarNode_t *intoNode, sarNode_t *node, int isNegNode, int isPlusNode);
@@ -60,14 +65,16 @@ static int sar_findNode(sar_nodeInstruction_t *nodeInstruction, sarNode_t *node,
 static void sar_triggerCallbacks(sarNode_t *node, int from, int to, unsigned int matchKey);
 static void sar_buildPathRecursive(sarNode_t *node, sar_linkedListNode_t *nodeInstructionList,
                                    sar_matchCallbackStruct_t *callbackStruct);
-static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
+static int sar_getNextActiveNodes(sar_linkedListPool_t *pool,
+                                  sarNode_t *curNode,
+                                  char curChar,
                                   sar_linkedListNode_t *newActiveNodesHead,
                                   sar_linkedListNode_t **lastNodePtr,
                                   int *isInLoop,
                                   int isInNegNodes);
 static int sar_findCharNode(sarNode_t *node, char charVal, sarNode_t **resultNode);
 static void sar_insertCharNode(sarNode_t *intoNode, sarNode_t *node);
-static sar_linkedListNode_t *sar_findNegCharNode(sarNode_t *node, char charVal, sar_linkedListNode_t **lastNode);
+static sar_linkedListNode_t *sar_findNegCharNode(sar_linkedListPool_t *pool, sarNode_t *node, char charVal, sar_linkedListNode_t **lastNodePtr);
 static int sar_isNodeActivated(sarNode_t *node, char c);
 
 static sar_linkedListNode_t *sar_convertConvertComplexInstructions(sar_linkedListNode_t *complexInstructions);
@@ -79,6 +86,12 @@ static int sar_compareNodeInstruction(sar_nodeInstruction_t *node1, sar_nodeInst
 static void sar_freeRegexpInstructions(sar_linkedListNode_t *regexpInstructions);
 
 static unsigned int sar_genMatchingKey(sarObject_t *sarObject);
+
+static int sar_initLinkedListPool(sar_linkedListPool_t *pool);
+static void sar_freeLinkedListPool(sar_linkedListPool_t *pool);
+
+static sar_linkedListNode_t *sar_getLinkedListNode(sar_linkedListPool_t *pool);
+static void sar_returnLinkedListPool(sar_linkedListPool_t *pool, sar_linkedListNode_t *node);
 
 #ifdef SAR_DEBUG_PRINT
 static void sar_debug_printNodeInstruction(sar_nodeInstruction_t *inst);
@@ -210,9 +223,11 @@ void sar_buildPath(sarObject_t *sarObject,
     sar_linkedListNode_t *complexInstructions = sar_buildComplexNodeInstructions(regexpStr, len);
     sar_linkedListNode_t *allInstructions = sar_convertConvertComplexInstructions(complexInstructions);
 
-    // printf("---Printing all simpleRegexps:---\n");
-    // sar_debug_printAllRegexps(allInstructions);
-    // printf("---DONE---\n");
+#ifdef SAR_DEBUG_PRINT
+    printf("---Printing all simpleRegexps:---\n");
+    sar_debug_printAllRegexps(allInstructions);
+    printf("---DONE---\n");
+#endif
 
     sar_linkedListNode_t *curInstructionNode = allInstructions;
     while (curInstructionNode != NULL && curInstructionNode->val != NULL)
@@ -263,13 +278,16 @@ void sar_stopMatch(sarObject_t *sarObject)
 
 void sar_matchFrom(sarObject_t *sarObject, char *matchStr, int from, int len)
 {
+    sar_linkedListPool_t pool;
+    sar_initLinkedListPool(&pool);
+
     sarObject->inMatch = 1;
     sarObject->continueFrom = -1;
 
     int i = from;
     while (i < len)
     {
-        sar_matchAtInternal(sarObject, matchStr, i, len);
+        sar_matchAtInternal(&pool, sarObject, matchStr, i, len);
         if (!sarObject->inMatch)
         {
             break;
@@ -286,24 +304,34 @@ void sar_matchFrom(sarObject_t *sarObject, char *matchStr, int from, int len)
         }
     }
 
-    // TODO: check if we need this?
+    sar_freeLinkedListPool(&pool);
+
+    // TODO: check if this is required
     sarObject->inMatch = 0;
 }
 
 void sar_matchAt(sarObject_t *sarObject, char *matchStr, int at, int len)
 {
-    sar_matchAtInternal(sarObject, matchStr, at, len);
+    sar_linkedListPool_t pool;
+    sar_initLinkedListPool(&pool);
+
+    sar_matchAtInternal(&pool, sarObject, matchStr, at, len);
+
+    sar_freeLinkedListPool(&pool);
 }
 
 // static methods:
 
-static void sar_matchAtInternal(sarObject_t *sarObject, char *matchStr, int at, int len)
+static void sar_matchAtInternal(sar_linkedListPool_t *pool, sarObject_t *sarObject, char *matchStr, int at, int len)
 {
     unsigned int matchKey = sar_genMatchingKey(sarObject);
-    sar_linkedListNode_t *activeNodes = malloc(sizeof(sar_linkedListNode_t));
+    // sar_linkedListNode_t *activeNodes = malloc(sizeof(sar_linkedListNode_t));
+    sar_linkedListNode_t *activeNodes = sar_getLinkedListNode(pool);
+
     // Head is start of list
     activeNodes->val = NULL;
-    activeNodes->next = malloc(sizeof(sar_linkedListNode_t));
+    // activeNodes->next = malloc(sizeof(sar_linkedListNode_t));
+    activeNodes->next = sar_getLinkedListNode(pool);
 
     activeNodes->next->val = sarObject->rootNode;
     activeNodes->next->next = NULL;
@@ -325,7 +353,7 @@ static void sar_matchAtInternal(sarObject_t *sarObject, char *matchStr, int at, 
             newActiveNodesHead.next = NULL;
             newActiveNodesHead.val = NULL;
             int isInLoop = 0;
-            int hasNextNodes = sar_getNextActiveNodes(curNode, matchStr[i], &newActiveNodesHead, &lastNode, &isInLoop, 0);
+            int hasNextNodes = sar_getNextActiveNodes(pool, curNode, matchStr[i], &newActiveNodesHead, &lastNode, &isInLoop, 0);
             if (hasNextNodes)
             {
                 lastNextActiveNodesNode->next = newActiveNodesHead.next;
@@ -347,7 +375,8 @@ static void sar_matchAtInternal(sarObject_t *sarObject, char *matchStr, int at, 
             curPtr = curPtr->next;
 
             // No longer needed
-            free(curPtrTemp);
+            // free(curPtrTemp);
+            sar_returnLinkedListPool(pool, curPtrTemp);
         }
         activeNodes->next = nextActiveNodes.next;
     }
@@ -362,12 +391,17 @@ static void sar_matchAtInternal(sarObject_t *sarObject, char *matchStr, int at, 
         curPtr = curPtr->next;
 
         // No longer needed
-        free(curPtrTemp);
+        // free(curPtrTemp);
+        sar_returnLinkedListPool(pool, curPtrTemp);
     }
-    free(activeNodes);
+
+    // free(activeNodes);
+    sar_returnLinkedListPool(pool, activeNodes);
 }
 
-static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
+static int sar_getNextActiveNodes(sar_linkedListPool_t *pool,
+                                  sarNode_t *curNode,
+                                  char curChar,
                                   sar_linkedListNode_t *newActiveNodesHead,
                                   sar_linkedListNode_t **lastNodePtr,
                                   int *isInLoop,
@@ -378,7 +412,7 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
     if (curNode->negativeNode != NULL)
     {
         sar_linkedListNode_t *negativeLastActiveNodes;
-        if (sar_getNextActiveNodes(curNode->negativeNode, curChar, curPtr, &negativeLastActiveNodes, isInLoop, 1))
+        if (sar_getNextActiveNodes(pool, curNode->negativeNode, curChar, curPtr, &negativeLastActiveNodes, isInLoop, 1))
         {
             curPtr = negativeLastActiveNodes;
         }
@@ -389,7 +423,7 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         // TODO: check if this can't cause for same node to be in next active nodes multiple times
         //       since it will recheck curNode->plusNode, and as we know,
         //       it has same instruction as current one
-        if (sar_getNextActiveNodes(curNode->plusNode, curChar, curPtr, &plusActiveNodes, isInLoop, isInNegNodes))
+        if (sar_getNextActiveNodes(pool, curNode->plusNode, curChar, curPtr, &plusActiveNodes, isInLoop, isInNegNodes))
         {
             curPtr = plusActiveNodes;
         }
@@ -399,7 +433,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         int isCharAlpha = isalpha(curChar) > 0;
         if (isCharAlpha != isInNegNodes)
         {
-            curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            curPtr->next = sar_getLinkedListNode(pool);
             curPtr->next->val = curNode->alphaNode;
             curPtr->next->next = NULL;
             curPtr = curPtr->next;
@@ -410,7 +445,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         int isCharAlNum = isalnum(curChar) > 0;
         if (isCharAlNum != isInNegNodes)
         {
-            curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            curPtr->next = sar_getLinkedListNode(pool);
             curPtr->next->val = curNode->alphaNumNodes;
             curPtr->next->next = NULL;
             curPtr = curPtr->next;
@@ -422,7 +458,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         int isCharSpace = isspace(curChar) > 0;
         if (isCharSpace != isInNegNodes)
         {
-            curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            curPtr->next = sar_getLinkedListNode(pool);
             curPtr->next->val = curNode->spaceNodes;
             curPtr->next->next = NULL;
             curPtr = curPtr->next;
@@ -434,7 +471,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         int isCharDigit = isdigit(curChar) > 0;
         if (isCharDigit != isInNegNodes)
         {
-            curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            curPtr->next = sar_getLinkedListNode(pool);
             curPtr->next->val = curNode->digitNode;
             curPtr->next->next = NULL;
             curPtr = curPtr->next;
@@ -442,7 +480,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
     }
     if (curNode->dotNode != NULL && !isInNegNodes)
     {
-        curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+        // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+        curPtr->next = sar_getLinkedListNode(pool);
         curPtr->next->val = curNode->dotNode;
         curPtr->next->next = NULL;
         curPtr = curPtr->next;
@@ -451,7 +490,7 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
     if (isInNegNodes)
     {
         sar_linkedListNode_t *lastItem;
-        sar_linkedListNode_t *negCharNodes = sar_findNegCharNode(curNode, curChar, &lastItem);
+        sar_linkedListNode_t *negCharNodes = sar_findNegCharNode(pool, curNode, curChar, &lastItem);
         if (negCharNodes != NULL)
         {
             curPtr->next = negCharNodes;
@@ -463,7 +502,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         sarNode_t *charNode;
         if (sar_findCharNode(curNode, curChar, &charNode))
         {
-            curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+            curPtr->next = sar_getLinkedListNode(pool);
             curPtr->next->val = charNode;
             curPtr->next->next = NULL;
             curPtr = curPtr->next;
@@ -474,7 +514,8 @@ static int sar_getNextActiveNodes(sarNode_t *curNode, char curChar,
         (sar_isNodeActivated(curNode, curChar) != isInNegNodes))
     {
         *isInLoop = 1;
-        curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+        // curPtr->next = malloc(sizeof(sar_linkedListNode_t));
+        curPtr->next = sar_getLinkedListNode(pool);
         curPtr->next->val = curNode;
         curPtr->next->next = NULL;
         curPtr = curPtr->next;
@@ -1202,7 +1243,7 @@ static int sar_findCharNode(sarNode_t *node, char charVal, sarNode_t **resultNod
     return retval;
 }
 
-static sar_linkedListNode_t *sar_findNegCharNode(sarNode_t *node, char charVal, sar_linkedListNode_t **lastNodePtr)
+static sar_linkedListNode_t *sar_findNegCharNode(sar_linkedListPool_t *pool, sarNode_t *node, char charVal, sar_linkedListNode_t **lastNodePtr)
 {
     *lastNodePtr = NULL;
 
@@ -1221,7 +1262,8 @@ static sar_linkedListNode_t *sar_findNegCharNode(sarNode_t *node, char charVal, 
     {
         if (node->charVals[i] != charVal)
         {
-            sar_linkedListNode_t *nextNode = malloc(sizeof(sar_linkedListNode_t));
+            // sar_linkedListNode_t *nextNode = malloc(sizeof(sar_linkedListNode_t));
+            sar_linkedListNode_t *nextNode = sar_getLinkedListNode(pool);
             nextNode->next = NULL;
             nextNode->val = node->charNodes[i];
 
@@ -1274,6 +1316,57 @@ static int sar_isNodeActivated(sarNode_t *node, char c)
     }
 
     return isActive != inst->isNeg;
+}
+
+static int sar_initLinkedListPool(sar_linkedListPool_t *pool)
+{
+    pool->head.next = NULL;
+}
+
+static void sar_freeLinkedListPool(sar_linkedListPool_t *pool)
+{
+    sar_linkedListNode_t *curNode = pool->head.next;
+    while (curNode != NULL)
+    {
+        sar_linkedListNode_t *nextNode = curNode->next;
+        free(curNode);
+        curNode = nextNode;
+    }
+}
+
+int mallocCount = 0;
+int poolSize = 0;
+static sar_linkedListNode_t *sar_getLinkedListNode(sar_linkedListPool_t *pool)
+{
+    if (pool->head.next == NULL)
+    {
+        mallocCount++;
+        poolSize++;
+        sar_linkedListNode_t *newNode = malloc(sizeof(sar_linkedListNode_t));
+        if (newNode == NULL)
+        {
+            // Error, can't allocate new node
+            return NULL;
+        }
+
+        newNode->next = NULL;
+        pool->head.next = newNode;
+    }
+
+    poolSize--;
+    sar_linkedListNode_t *returnNode = pool->head.next;
+    pool->head.next = returnNode->next;
+
+    // TODO: Should this be disabled?
+    returnNode->next = NULL;
+    return returnNode;
+}
+
+static void sar_returnLinkedListPool(sar_linkedListPool_t *pool, sar_linkedListNode_t *node)
+{
+    poolSize++;
+    node->next = pool->head.next;
+    pool->head.next = node;
 }
 
 #ifdef SAR_DEBUG_PRINT
