@@ -4,6 +4,14 @@
 
 cd /sar
 
+python3.6 setup.py test
+TEST_STATUS=$?
+
+if [[ $TEST_STATUS -ne 0 ]]; then
+    echo "SAR Tests Failed!" >&2
+    exit 1
+fi
+
 python3.6 setup.py sdist
 python3.6 setup.py bdist_wheel
 
@@ -17,3 +25,5 @@ cd ../
 
 rm -r build
 rm -r regexp_sar.egg-info/
+rm -r regexp_sar/*.so
+rm -r .eggs/

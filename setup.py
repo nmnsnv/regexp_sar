@@ -5,7 +5,7 @@ def main():
     with open("README.md", "r", encoding="utf-8") as fh:
         long_description = fh.read()
     setup(name="regexp-sar",
-          version="0.1.2b2",
+          version="0.1.2b3",
 
           description="SAR Regexp Engine for Python",
           long_description=long_description,
@@ -16,8 +16,8 @@ def main():
           author="Noam Nisanov",
           author_email="noam.nisanov@gmail.com",
 
-          # test_suite='nose.collector',
-          # tests_require=['nose'],
+          test_suite='nose.collector',
+          tests_require=['nose'],
 
           ext_modules=[Extension("regexp_sar._regexp_sar_c",
                                  ["src/sarmodule.c", "src/sarcore.c"],
