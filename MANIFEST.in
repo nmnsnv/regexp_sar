@@ -1,5 +1,6 @@
 
 recursive-include tests *
 recursive-include examples *
+recursive-include src *
 
 include LICENSE.txt
