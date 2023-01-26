@@ -23,7 +23,7 @@ def main():
                                  ["src/sarmodule.c", "src/sarcore.c"],
                                  py_limited_api=True)],
           headers=['src/sarcore.h'],
-          include_dirs=["src/sarcore.h"],
+          include_dirs=["src/"],
           license="MIT",
           python_requires='>=3.4',
           packages=["regexp_sar"])
