@@ -1321,6 +1321,7 @@ static int sar_isNodeActivated(sarNode_t *node, char c)
 static int sar_initLinkedListPool(sar_linkedListPool_t *pool)
 {
     pool->head.next = NULL;
+    return 0;
 }
 
 static void sar_freeLinkedListPool(sar_linkedListPool_t *pool)
