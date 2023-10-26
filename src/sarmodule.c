@@ -1,5 +1,6 @@
 
-#define Py_LIMITED_API
+#define Py_LIMITED_API 0x03030000
+#define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
 #include "sarcore.h"
@@ -57,7 +58,7 @@ static PyObject *sarmod_addRegexp(PyObject *self, PyObject *args)
 {
     PyObject *sarObjectCapsule;
     char *regexpStr;
-    int strLen;
+    Py_ssize_t strLen;
     PyObject *regexpCallback;
 
     if (!PyArg_ParseTuple(args, "Os#O", &sarObjectCapsule, &regexpStr, &strLen, &regexpCallback))
@@ -76,7 +77,7 @@ static PyObject *sarmod_matchFrom(PyObject *self, PyObject *args)
 {
     PyObject *sarObjectCapsule;
     char *matchStr;
-    int strLen;
+    Py_ssize_t strLen;
     int matchFromIdx;
     if (!PyArg_ParseTuple(args, "Os#i", &sarObjectCapsule, &matchStr, &strLen, &matchFromIdx))
     {
@@ -92,7 +93,7 @@ static PyObject *sarmod_matchAt(PyObject *self, PyObject *args)
 {
     PyObject *sarObjectCapsule;
     char *matchStr;
-    int strLen;
+    Py_ssize_t strLen;
     int matchAtIdx;
 
     if (!PyArg_ParseTuple(args, "Os#i", &sarObjectCapsule, &matchStr, &strLen, &matchAtIdx))
