@@ -159,9 +159,11 @@ sar.match('a\\b') # Match: 1->2
 
 Examples may be found in the ```test_oousage.py``` file, and in the examples directory
 
-# More information
+# Articles
 
-For more information, visit [my introduction post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md), or [my practical example where SAR comes to play](https://github.com/nmnsnv/regexp_sar/blob/master/docs/function_usage_location_in_c.md).
+* For more information, visit [my introduction post](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md)
+* For practical example, visit [Practical example where SAR comes to play](https://github.com/nmnsnv/regexp_sar/blob/master/docs/function_usage_location_in_c.md).
+* For my article regarding incorporating SAR into DLP (Data Leak Prevention), visit [DLP (Data Loss Prevention) in SAR](https://github.com/nmnsnv/regexp_sar/blob/master/docs/introduction.md)
 
 # Unicode support
 
